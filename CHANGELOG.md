@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-06-13
+
+### Fixed
+
+- Edit form now correctly pre-fills title and body with the card's existing content — nui `Input`'s `default_value` (feedkeys-based) was replaced with `nvim_buf_set_lines` via `vim.schedule` to avoid race conditions and non-ASCII encoding issues
+
 ## [0.1.1] - 2026-06-13
 
 ### Fixed
@@ -34,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions release workflow (auto GitHub Release on `v*` tag push)
 - Unit tests for auth resolution, GraphQL response parsing, and store logic
 
-[Unreleased]: https://github.com/Kosuke-Shinagawa/gh-board.nvim/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/Kosuke-Shinagawa/gh-board.nvim/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/Kosuke-Shinagawa/gh-board.nvim/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Kosuke-Shinagawa/gh-board.nvim/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Kosuke-Shinagawa/gh-board.nvim/releases/tag/v0.1.0
