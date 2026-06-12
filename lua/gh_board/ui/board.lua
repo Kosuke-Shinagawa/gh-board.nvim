@@ -27,6 +27,31 @@ local function calc_col_width(win_width, num_cols)
   return math.floor((win_width - num_cols - 1) / num_cols)
 end
 
+-- グリッド行文字列から ci 番目のカラムのバイト範囲 [start, end) を返す（0 始まり）
+-- │ は UTF-8 で 3 バイトのため算術計算は使わず文字列検索で求める
+---@param line string
+---@param ci integer 1 始まり
+---@return integer|nil, integer|nil
+local function col_byte_range(line, ci)
+  local sep = "│"
+  local sep_len = #sep
+  local pos = 1
+  for i = 1, ci do
+    local found = line:find(sep, pos, true)
+    if not found then
+      return nil, nil
+    end
+    if i == ci then
+      local s = found + sep_len - 1
+      local next_sep = line:find(sep, found + sep_len, true)
+      local e = next_sep and (next_sep - 1) or #line
+      return s, e
+    end
+    pos = found + sep_len
+  end
+  return nil, nil
+end
+
 -- カーソルをカラム内の有効範囲にクランプする
 ---@param state BoardState
 local function clamp_cursor(state)
@@ -134,32 +159,27 @@ local function render()
 
   for _, hl_info in ipairs(all_highlights) do
     local buf_row = hl_info.row - 1 -- 0 始まり
-    -- カラム内での文字開始オフセットを計算: "│" + (ci-1) * (col_width + 1) + 1
-    local byte_start = 1 + (hl_info.col_idx - 1) * (col_width + 1)
-    local byte_end = byte_start + col_width
-
-    pcall(vim.api.nvim_buf_add_highlight, bufnr, ns, hl_info.hl, buf_row, byte_start, byte_end)
+    local hl_line = grid_lines[hl_info.row]
+    if hl_line then
+      local bs, be = col_byte_range(hl_line, hl_info.col_idx)
+      if bs then
+        pcall(vim.api.nvim_buf_add_highlight, bufnr, ns, hl_info.hl, buf_row, bs, be)
+      end
+    end
   end
 
   -- カーソル行のハイライト
   clamp_cursor(state)
   local cursor_buf_row = column_comp.HEADER_LINES + _cursor.card - 1 -- 0 始まり
-  local cursor_byte_start = 1 + (_cursor.col - 1) * (col_width + 1)
-  local cursor_byte_end = cursor_byte_start + col_width
-  pcall(
-    vim.api.nvim_buf_add_highlight,
-    bufnr,
-    ns,
-    "GhBoardCursor",
-    cursor_buf_row,
-    cursor_byte_start,
-    cursor_byte_end
-  )
-
-  -- nvim カーソルをカーソル行に移動
-  local nvim_row = cursor_buf_row + 1
-  local nvim_col = cursor_byte_start
-  pcall(vim.api.nvim_win_set_cursor, _popup.winid, { nvim_row, nvim_col })
+  local cursor_line = grid_lines[cursor_buf_row + 1]
+  if cursor_line then
+    local cbs, cbe = col_byte_range(cursor_line, _cursor.col)
+    if cbs then
+      pcall(vim.api.nvim_buf_add_highlight, bufnr, ns, "GhBoardCursor", cursor_buf_row, cbs, cbe)
+      -- nvim カーソルをカーソル行に移動
+      pcall(vim.api.nvim_win_set_cursor, _popup.winid, { cursor_buf_row + 1, cbs })
+    end
+  end
 
   vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
 end
