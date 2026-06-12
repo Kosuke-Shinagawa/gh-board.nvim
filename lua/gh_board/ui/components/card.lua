@@ -41,14 +41,15 @@ function M.render_line(card, width)
     -- マルチバイト対応のトリム
     local trimmed = ""
     local w = 0
-    for _, byte_str in utf8 and utf8.codes and
-      (function()
+    for _, byte_str in
+      utf8 and utf8.codes and (function()
         local t = {}
         for _, ch in utf8.codes(title) do
           table.insert(t, utf8.char(ch))
         end
         return ipairs(t)
-      end)() or ipairs({}) do
+      end)() or ipairs({})
+    do
       local cw = vim.fn.strdisplaywidth(byte_str)
       if w + cw > max_title - 1 then
         break

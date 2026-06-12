@@ -96,23 +96,17 @@ function M.optimistic_move(item_id, column_id, on_revert)
   notify()
 
   -- バックグラウンドで API 呼び出し
-  projects.move_card(
-    _state.project.id,
-    item_id,
-    _state.status_field_id,
-    column_id,
-    function(err)
-      if err then
-        -- ロールバック
-        _state = _snapshot
-        _snapshot = nil
-        notify()
-        on_revert(err)
-      else
-        _snapshot = nil
-      end
+  projects.move_card(_state.project.id, item_id, _state.status_field_id, column_id, function(err)
+    if err then
+      -- ロールバック
+      _state = _snapshot
+      _snapshot = nil
+      notify()
+      on_revert(err)
+    else
+      _snapshot = nil
     end
-  )
+  end)
 end
 
 -- 作成成功後にカードを追加する
