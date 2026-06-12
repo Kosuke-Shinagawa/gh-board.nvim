@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-06-13
+
+### Fixed
+
+- Cursor highlight byte offset miscalculation when moving left/right between columns — `│` (U+2502) is 3 bytes in UTF-8, causing visible drift for columns 2 and beyond
+
 ## [0.1.0] - 2026-06-13
 
 ### Added
@@ -28,5 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions release workflow (auto GitHub Release on `v*` tag push)
 - Unit tests for auth resolution, GraphQL response parsing, and store logic
 
-[Unreleased]: https://github.com/Kosuke-Shinagawa/gh-board.nvim/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Kosuke-Shinagawa/gh-board.nvim/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/Kosuke-Shinagawa/gh-board.nvim/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Kosuke-Shinagawa/gh-board.nvim/releases/tag/v0.1.0
