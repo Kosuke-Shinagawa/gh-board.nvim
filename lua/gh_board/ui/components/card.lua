@@ -39,17 +39,17 @@ function M.render_line(card, width)
   local title = c.title
   if vim.fn.strdisplaywidth(title) > max_title then
     -- マルチバイト対応のトリム
+    -- and/or チェーンは多値関数の第 1 戻り値しか伝播しないため、
+    -- chars テーブルを先に構築してから ipairs で回す
     local trimmed = ""
     local w = 0
-    for _, byte_str in
-      utf8 and utf8.codes and (function()
-        local t = {}
-        for _, ch in utf8.codes(title) do
-          table.insert(t, utf8.char(ch))
-        end
-        return ipairs(t)
-      end)() or ipairs({})
-    do
+    local chars = {}
+    if utf8 and utf8.codes then
+      for _, ch in utf8.codes(title) do
+        table.insert(chars, utf8.char(ch))
+      end
+    end
+    for _, byte_str in ipairs(chars) do
       local cw = vim.fn.strdisplaywidth(byte_str)
       if w + cw > max_title - 1 then
         break
