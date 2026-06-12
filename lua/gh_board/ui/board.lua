@@ -2,7 +2,6 @@ local Popup = require("nui.popup")
 local config = require("gh_board.config")
 local store = require("gh_board.state.store")
 local column_comp = require("gh_board.ui.components.column")
-local card_comp = require("gh_board.ui.components.card")
 
 local M = {}
 

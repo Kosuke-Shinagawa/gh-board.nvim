@@ -50,20 +50,18 @@ describe("state/store", function()
 
   describe("subscribe / notify", function()
     it("calls listener when apply_create is called", function()
-      -- store に直接状態を注入するため load をモックする
-      local called = false
-      local unsub = store.subscribe(function()
-        called = true
-      end)
-
       -- load をモックして状態をセット
       local orig_get_board = projects.get_board
       projects.get_board = function(_, cb)
         cb(nil, make_state())
       end
-
       store.load("PVT_001", function() end)
-      called = false  -- load による通知をリセット
+
+      -- load 後に購読してその後の通知だけを検知する
+      local called = false
+      local unsub = store.subscribe(function()
+        called = true
+      end)
 
       store.apply_create({
         id = "PVTI_new",

@@ -169,7 +169,7 @@ end
 -- 既存カードの編集フォームを開く
 ---@param card GhCard
 ---@param state BoardState
-function M.open_edit(card, state)
+function M.open_edit(card, _state)
   open_form(card.content.title, card.content.body or "", "Edit Card", function(title, body)
     projects.update_card(card, title, body, function(err)
       if err then

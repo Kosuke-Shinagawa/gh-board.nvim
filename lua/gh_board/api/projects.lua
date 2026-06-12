@@ -59,11 +59,8 @@ local function parse_board(node)
     ---@type GhCardContent
     local parsed_content
     if content.number then
-      -- Issue または PullRequest
-      local kind = content.mergeStateStatus ~= nil and "pr" or "issue"
-      -- GraphQL の __typename がないため state で判断: PR は MERGED もある
-      -- items の content は型名が返らないため、number + url の存在で判定
-      -- PullRequest は url に /pull/ が含まれる
+      -- PullRequest は url に /pull/ が含まれる（__typename は fragment 展開で返らないため URL で判定）
+      local kind
       if content.url and content.url:find("/pull/") then
         kind = "pr"
       else

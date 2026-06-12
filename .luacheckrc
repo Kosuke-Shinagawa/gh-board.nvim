@@ -20,6 +20,8 @@ max_line_length = false
 self = false
 
 files["tests/**/*.lua"] = {
-  -- allow injected test globals
   globals = { "describe", "it", "before_each", "after_each", "assert", "pending" },
+  -- allow monkey-patching os and vim in tests
+  read_globals = {},
+  ignore = { "121" },  -- W121: setting read-only field of global
 }
