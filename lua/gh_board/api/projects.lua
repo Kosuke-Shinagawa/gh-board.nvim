@@ -138,7 +138,8 @@ local function parse_board(node)
     columns = columns,
     cards = cards,
     status_field_id = status_field.id,
-  }, nil
+  },
+    nil
 end
 
 -- ユーザーのプロジェクト一覧を取得する
@@ -154,11 +155,7 @@ function M.list_projects(owner, callback)
       return
     end
 
-    local nodes = data
-      and data.user
-      and data.user.projectsV2
-      and data.user.projectsV2.nodes
-      or {}
+    local nodes = data and data.user and data.user.projectsV2 and data.user.projectsV2.nodes or {}
 
     ---@type GhProject[]
     local projects = {}

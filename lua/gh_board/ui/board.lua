@@ -75,7 +75,7 @@ local function render()
     return
   end
 
-  local win_width = vim.api.nvim_win_get_width(_popup.winid) - 2  -- border を引く
+  local win_width = vim.api.nvim_win_get_width(_popup.winid) - 2 -- border を引く
   local num_cols = #state.columns
   local col_width = calc_col_width(win_width, num_cols)
 
@@ -134,7 +134,7 @@ local function render()
   local ns = vim.api.nvim_create_namespace("gh_board")
 
   for _, hl_info in ipairs(all_highlights) do
-    local buf_row = hl_info.row - 1  -- 0 始まり
+    local buf_row = hl_info.row - 1 -- 0 始まり
     -- カラム内での文字開始オフセットを計算: "│" + (ci-1) * (col_width + 1) + 1
     local byte_start = 1 + (hl_info.col_idx - 1) * (col_width + 1)
     local byte_end = byte_start + col_width
@@ -144,7 +144,7 @@ local function render()
 
   -- カーソル行のハイライト
   clamp_cursor(state)
-  local cursor_buf_row = column_comp.HEADER_LINES + _cursor.card - 1  -- 0 始まり
+  local cursor_buf_row = column_comp.HEADER_LINES + _cursor.card - 1 -- 0 始まり
   local cursor_byte_start = 1 + (_cursor.col - 1) * (col_width + 1)
   local cursor_byte_end = cursor_byte_start + col_width
   pcall(

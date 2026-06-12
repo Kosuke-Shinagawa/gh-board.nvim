@@ -27,7 +27,8 @@ local function build_lines(card)
   table.insert(lines, "")
 
   -- メタ情報
-  local kind_label = ({ draft = "Draft Issue", issue = "Issue", pr = "Pull Request" })[c.kind] or c.kind
+  local kind_label = ({ draft = "Draft Issue", issue = "Issue", pr = "Pull Request" })[c.kind]
+    or c.kind
   table.insert(lines, string.format("  Type    : %s", kind_label))
 
   if c.number then
@@ -64,7 +65,10 @@ local function build_lines(card)
   -- 本文
   if c.body and c.body ~= "" then
     table.insert(lines, "")
-    table.insert(lines, "  ── Description ──────────────────────────────")
+    table.insert(
+      lines,
+      "  ── Description ──────────────────────────────"
+    )
     for _, body_line in ipairs(vim.split(c.body, "\n", { plain = true })) do
       table.insert(lines, "  " .. body_line)
     end
