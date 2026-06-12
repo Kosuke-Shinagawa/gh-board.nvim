@@ -51,8 +51,7 @@ describe("api/auth", function()
 
     it("falls back to GITHUB_TOKEN env var when gh CLI fails", function()
       local original_exepath = vim.fn.exepath
-      local original_system = vim.fn.system
-      local original_getenv = os.getenv
+      local original_env_token = vim.env.GITHUB_TOKEN
 
       vim.fn.exepath = function(cmd)
         if cmd == "gh" then
@@ -61,18 +60,12 @@ describe("api/auth", function()
         return original_exepath(cmd)
       end
 
-      os.getenv = function(name)
-        if name == "GITHUB_TOKEN" then
-          return "env_token_env123"
-        end
-        return original_getenv(name)
-      end
+      vim.env.GITHUB_TOKEN = "env_token_env123"
 
       local token, err = auth.resolve()
 
       vim.fn.exepath = original_exepath
-      vim.fn.system = original_system
-      os.getenv = original_getenv
+      vim.env.GITHUB_TOKEN = original_env_token
 
       assert.is_nil(err)
       assert.equals("env_token_env123", token)
@@ -80,20 +73,18 @@ describe("api/auth", function()
 
     it("returns error message when no token source is available", function()
       local original_exepath = vim.fn.exepath
-      local original_getenv = os.getenv
+      local original_env_token = vim.env.GITHUB_TOKEN
 
       vim.fn.exepath = function(_)
         return ""
       end
 
-      os.getenv = function(_)
-        return nil
-      end
+      vim.env.GITHUB_TOKEN = nil
 
       local token, err = auth.resolve()
 
       vim.fn.exepath = original_exepath
-      os.getenv = original_getenv
+      vim.env.GITHUB_TOKEN = original_env_token
 
       assert.is_nil(token)
       assert.is_not_nil(err)

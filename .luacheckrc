@@ -23,5 +23,5 @@ files["tests/**/*.lua"] = {
   globals = { "describe", "it", "before_each", "after_each", "assert", "pending" },
   -- allow monkey-patching os and vim in tests
   read_globals = {},
-  ignore = { "121" },  -- W121: setting read-only field of global
+  ignore = { "122" },  -- W122: setting read-only field of global
 }

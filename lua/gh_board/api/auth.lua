@@ -36,7 +36,7 @@ function M.resolve()
     return cli_token, nil
   end
 
-  local env_token = os.getenv("GITHUB_TOKEN")
+  local env_token = vim.env.GITHUB_TOKEN
   if env_token and env_token ~= "" then
     return env_token, nil
   end
