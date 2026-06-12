@@ -67,7 +67,6 @@ local function open_form(initial_title, initial_body, form_label, on_submit)
     size = { width = form_width },
   }, {
     prompt = "Title: ",
-    default_value = initial_title,
     on_submit = function(title_value)
       if vim.trim(title_value) == "" then
         vim.notify("gh-board: Title is required.", vim.log.levels.WARN)
@@ -91,12 +90,6 @@ local function open_form(initial_title, initial_body, form_label, on_submit)
   table.insert(_windows, body_popup)
   table.insert(_windows, title_input)
 
-  -- 初期値を本文バッファにセット
-  if initial_body ~= "" then
-    local body_lines = vim.split(initial_body, "\n", { plain = true })
-    vim.api.nvim_buf_set_lines(body_popup.bufnr, 0, -1, false, body_lines)
-  end
-
   -- <Tab> で title_input ↔ body_popup を切り替える
   vim.keymap.set("n", "<Tab>", function()
     if vim.api.nvim_get_current_win() == title_input.winid then
@@ -117,9 +110,23 @@ local function open_form(initial_title, initial_body, form_label, on_submit)
     close_all()
   end, { buffer = body_popup.bufnr, nowait = true, silent = true })
 
-  -- タイトル入力にフォーカスして Insert モードで開始
-  vim.api.nvim_set_current_win(title_input.winid)
-  vim.cmd("startinsert!")
+  -- nui の内部セットアップ（BufEnter autocmd / feedkeys 処理）完了後に初期値をセット。
+  -- default_value は feedkeys 経由のため非 ASCII 文字が化けるので使わない。
+  vim.schedule(function()
+    if not vim.api.nvim_buf_is_valid(body_popup.bufnr) then
+      return
+    end
+    if initial_body ~= "" then
+      local body_lines = vim.split(initial_body, "\n", { plain = true })
+      vim.api.nvim_buf_set_lines(body_popup.bufnr, 0, -1, false, body_lines)
+    end
+    if vim.api.nvim_win_is_valid(title_input.winid) then
+      vim.api.nvim_set_current_win(title_input.winid)
+      vim.cmd("stopinsert")
+      vim.api.nvim_buf_set_lines(title_input.bufnr, 0, -1, false, { initial_title })
+      vim.cmd("startinsert!")
+    end
+  end)
 end
 
 -- 新規カード作成フォームを開く
