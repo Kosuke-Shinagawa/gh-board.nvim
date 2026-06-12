@@ -1,0 +1,286 @@
+*gh-board.txt*   GitHub Projects v2 Kanban board inside Neovim
+
+Author:  Kosuke Shinagawa
+License: MIT
+Version: 0.1.0
+
+==============================================================================
+CONTENTS                                                    *gh-board-contents*
+
+  1. Introduction ......................... |gh-board-introduction|
+  2. Requirements ......................... |gh-board-requirements|
+  3. Installation ......................... |gh-board-installation|
+  4. Setup ................................ |gh-board-setup|
+  5. Commands ............................. |gh-board-commands|
+  6. Keymaps .............................. |gh-board-keymaps|
+  7. Configuration ........................ |gh-board-configuration|
+  8. Authentication ....................... |gh-board-auth|
+  9. Highlights ........................... |gh-board-highlights|
+
+==============================================================================
+1. INTRODUCTION                                         *gh-board-introduction*
+
+gh-board.nvim lets you view and edit GitHub Projects v2 Kanban boards from
+inside Neovim floating windows — no browser required.
+
+Features:
+  • Kanban board with columns and cards in a floating window
+  • Card detail view (title, body, assignees, labels, linked Issue/PR)
+  • Card creation, editing, deletion, and status changes
+  • Bidirectional sync with GitHub Projects v2 via GraphQL API
+  • Optimistic UI updates with automatic rollback on error
+
+==============================================================================
+2. REQUIREMENTS                                         *gh-board-requirements*
+
+Required:
+  • Neovim >= 0.9.0
+  • plenary.nvim  https://github.com/nvim-lua/plenary.nvim
+  • nui.nvim      https://github.com/MunifTanjim/nui.nvim
+  • One of: gh CLI, $GITHUB_TOKEN, or token in setup()
+
+Optional:
+  • gh CLI        https://cli.github.com  (recommended for authentication)
+  • telescope.nvim (for future fuzzy search extension)
+
+==============================================================================
+3. INSTALLATION                                         *gh-board-installation*
+
+lazy.nvim (recommended): >
+
+  {
+    "Kosuke-Shinagawa/gh-board.nvim",
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "MunifTanjim/nui.nvim",
+    },
+    config = function()
+      require("gh_board").setup({
+        default_owner = "your-github-username",
+      })
+    end,
+  }
+
+packer.nvim: >
+
+  use {
+    "Kosuke-Shinagawa/gh-board.nvim",
+    requires = {
+      "nvim-lua/plenary.nvim",
+      "MunifTanjim/nui.nvim",
+    },
+    config = function()
+      require("gh_board").setup({})
+    end,
+  }
+
+==============================================================================
+4. SETUP                                                       *gh-board-setup*
+
+Call `setup()` once during Neovim startup: >
+
+  require("gh_board").setup({
+    -- GitHub personal access token (optional, see |gh-board-auth|)
+    token = nil,
+
+    -- Default GitHub username or organization
+    default_owner = nil,
+
+    -- Default project number (skips project selection prompt)
+    default_project = nil,
+
+    -- Number of cards to fetch per board load
+    per_page = 50,
+
+    -- Floating window dimensions
+    win_width  = math.floor(vim.o.columns * 0.9),
+    win_height = math.floor(vim.o.lines   * 0.8),
+
+    keymaps = {
+      open_detail = "<CR>",
+      new_card    = "n",
+      move_card   = "m",
+      delete_card = "d",
+      edit_card   = "e",
+      refresh     = "r",
+      close       = "q",
+    },
+  })
+
+If `setup()` is never called, the plugin auto-initializes with defaults on
+`VimEnter`.
+
+==============================================================================
+5. COMMANDS                                                 *gh-board-commands*
+
+                                                                    *:GhBoard*
+:GhBoard [owner] [number]
+
+  Open the Kanban board. Arguments are optional.
+
+  No arguments~
+    Uses `default_owner` from setup(). If the owner has multiple projects,
+    a selection prompt appears. If only one project exists, it opens directly.
+
+  :GhBoard owner~
+    Lists projects for the given GitHub user or organization.
+
+  :GhBoard owner number~
+    Opens the project with the given number directly.
+
+  Examples: >
+    :GhBoard
+    :GhBoard myusername
+    :GhBoard myorg 3
+<
+
+==============================================================================
+6. KEYMAPS                                                   *gh-board-keymaps*
+
+All keymaps are buffer-local (only active inside gh-board windows).
+
+------------------------------------------------------------------------------
+Kanban Board~
+
+  j / k       Move cursor down / up within current column
+  h / l       Move cursor left / right between columns
+  <CR>        Open card detail popup
+  n           Create new card (opens form)
+  m           Move card to another column (status change)
+  d           Delete card (confirmation required)
+  r           Refresh board from GitHub
+  q / <Esc>   Close board
+
+------------------------------------------------------------------------------
+Card Detail~
+
+  e           Edit card (opens edit form)
+  d           Delete card (confirmation required)
+  q / <Esc>   Close detail and return to board
+
+------------------------------------------------------------------------------
+Card Form (create / edit)~
+
+  <CR>        Confirm and submit (when cursor is in Title field)
+  <Tab>       Switch focus between Title and Body fields
+  <Esc>       Cancel and close form
+
+==============================================================================
+7. CONFIGURATION                                       *gh-board-configuration*
+
+                                                         *gh-board-config.token*
+token~
+  Type: string | nil
+  Default: nil
+
+  GitHub personal access token with `project` scope.
+  When nil, the plugin resolves a token automatically (see |gh-board-auth|).
+
+                                                  *gh-board-config.default_owner*
+default_owner~
+  Type: string | nil
+  Default: nil
+
+  GitHub username or organization used when `:GhBoard` is called without
+  arguments. When nil, the plugin attempts to read the current `gh` CLI login.
+
+                                                *gh-board-config.default_project*
+default_project~
+  Type: integer | nil
+  Default: nil
+
+  Project number used when `:GhBoard` is called without a number argument.
+  Skips the project selection prompt.
+
+                                                      *gh-board-config.per_page*
+per_page~
+  Type: integer
+  Default: 50
+
+  Maximum number of cards fetched per board load. GitHub allows up to 100.
+
+                                                     *gh-board-config.win_width*
+win_width~
+  Type: integer
+  Default: 90% of `vim.o.columns`
+
+  Width of the Kanban board floating window in columns.
+
+                                                    *gh-board-config.win_height*
+win_height~
+  Type: integer
+  Default: 80% of `vim.o.lines`
+
+  Height of the Kanban board floating window in lines.
+
+                                                      *gh-board-config.keymaps*
+keymaps~
+  Type: table
+  Default: see |gh-board-keymaps|
+
+  Override default keybindings. Example: >
+
+    require("gh_board").setup({
+      keymaps = {
+        open_detail = "<CR>",
+        new_card    = "a",    -- override: 'a' to add
+        move_card   = "<C-m>",
+        delete_card = "D",
+        edit_card   = "e",
+        refresh     = "<F5>",
+        close       = "q",
+      },
+    })
+<
+
+==============================================================================
+8. AUTHENTICATION                                              *gh-board-auth*
+
+The plugin resolves a GitHub token using the following priority order:
+
+  1. `token` option in `setup()` (highest priority)
+  2. `gh auth token` — reads from the gh CLI session
+  3. `$GITHUB_TOKEN` environment variable
+
+If none of the above provides a token, the plugin shows an error with
+instructions.
+
+Required token scope: `project` (read + write access to Projects v2).
+
+To authenticate with the gh CLI: >
+
+  gh auth login --scopes project
+
+To set an environment variable: >
+
+  export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
+
+==============================================================================
+9. HIGHLIGHTS                                             *gh-board-highlights*
+
+The following highlight groups can be overridden in your colorscheme or
+`after/plugin/gh-board.lua`:
+
+  GhBoardColumnHeader      Column title row
+  GhBoardColumnSeparator   Horizontal separator line under column title
+  GhBoardColumnGreen       Column header with GitHub color "GREEN"
+  GhBoardColumnYellow      Column header with GitHub color "YELLOW"
+  GhBoardColumnRed         Column header with GitHub color "RED"
+  GhBoardColumnBlue        Column header with GitHub color "BLUE"
+  GhBoardColumnOrange      Column header with GitHub color "ORANGE"
+  GhBoardColumnPink        Column header with GitHub color "PINK"
+  GhBoardColumnPurple      Column header with GitHub color "PURPLE"
+  GhBoardColumnGray        Column header with GitHub color "GRAY"
+  GhBoardCard              Normal card row
+  GhBoardCardDraft         Draft Issue card
+  GhBoardCardClosed        Closed Issue / PR card
+  GhBoardCardMerged        Merged PR card
+  GhBoardCursor            Currently selected card row
+  GhBoardEmpty             Empty column placeholder
+
+Example override: >
+
+  vim.api.nvim_set_hl(0, "GhBoardCursor", { bg = "#264f78" })
+
+==============================================================================
+vim:tw=78:ts=2:ft=help:norl:
