@@ -110,8 +110,10 @@ local function open_form(initial_title, initial_body, form_label, on_submit)
     close_all()
   end, { buffer = body_popup.bufnr, nowait = true, silent = true })
 
-  -- nui の内部セットアップ（BufEnter autocmd / feedkeys 処理）完了後に初期値をセット。
+  -- nui の内部セットアップ完了後に初期値をセット。
   -- default_value は feedkeys 経由のため非 ASCII 文字が化けるので使わない。
+  -- nui が prompt をバッファ本体に書き込む実装の場合はその prefix を保持し、
+  -- 値だけ差し替えることで on_submit の prompt 除去ロジックと整合させる。
   vim.schedule(function()
     if not vim.api.nvim_buf_is_valid(body_popup.bufnr) then
       return
@@ -120,12 +122,16 @@ local function open_form(initial_title, initial_body, form_label, on_submit)
       local body_lines = vim.split(initial_body, "\n", { plain = true })
       vim.api.nvim_buf_set_lines(body_popup.bufnr, 0, -1, false, body_lines)
     end
-    if vim.api.nvim_win_is_valid(title_input.winid) then
-      vim.api.nvim_set_current_win(title_input.winid)
-      vim.cmd("stopinsert")
-      vim.api.nvim_buf_set_lines(title_input.bufnr, 0, -1, false, { initial_title })
-      vim.cmd("startinsert!")
+    if not vim.api.nvim_win_is_valid(title_input.winid) then
+      return
     end
+    vim.api.nvim_set_current_win(title_input.winid)
+    -- マウント後のバッファを読んで prompt prefix を検出・保持する
+    local cur = vim.api.nvim_buf_get_lines(title_input.bufnr, 0, 1, false)[1] or ""
+    local prompt_str = "Title: "
+    local buf_prefix = cur:sub(1, #prompt_str) == prompt_str and prompt_str or ""
+    vim.api.nvim_buf_set_lines(title_input.bufnr, 0, -1, false, { buf_prefix .. initial_title })
+    vim.cmd("startinsert!")
   end)
 end
 
