@@ -15,6 +15,8 @@ local M = {}
 ---@field move_card string
 ---@field delete_card string
 ---@field edit_card string
+---@field promote_card string
+---@field close_issue string
 ---@field refresh string
 ---@field close string
 
@@ -32,6 +34,8 @@ local defaults = {
     move_card = "m",
     delete_card = "d",
     edit_card = "e",
+    promote_card = "p",
+    close_issue = "C",
     refresh = "r",
     close = "q",
   },

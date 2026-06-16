@@ -179,4 +179,53 @@ M.DELETE_CARD = [[
   }
 ]]
 
+M.LIST_REPOS = [[
+  query ListRepos($login: String!, $first: Int!) {
+    user(login: $login) {
+      repositories(first: $first, orderBy: { field: UPDATED_AT, direction: DESC }) {
+        nodes {
+          id
+          name
+          nameWithOwner
+        }
+      }
+    }
+  }
+]]
+
+M.CLOSE_ISSUE = [[
+  mutation CloseIssue($issueId: ID!) {
+    closeIssue(input: { issueId: $issueId }) {
+      issue {
+        id
+        state
+      }
+    }
+  }
+]]
+
+M.REOPEN_ISSUE = [[
+  mutation ReopenIssue($issueId: ID!) {
+    reopenIssue(input: { issueId: $issueId }) {
+      issue {
+        id
+        state
+      }
+    }
+  }
+]]
+
+M.CONVERT_DRAFT_TO_ISSUE = [[
+  mutation ConvertDraftToIssue($itemId: ID!, $repositoryId: ID!) {
+    convertProjectV2DraftIssueItemToIssue(input: {
+      itemId: $itemId
+      repositoryId: $repositoryId
+    }) {
+      item {
+        id
+      }
+    }
+  }
+]]
+
 return M

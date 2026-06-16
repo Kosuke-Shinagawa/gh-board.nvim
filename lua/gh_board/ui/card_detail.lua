@@ -8,11 +8,31 @@ local M = {}
 ---@type any nui Popup インスタンス
 local _popup = nil
 
+-- close() 直後に同フレームで board の q が発火しても無視できるよう
+-- 「直前に閉じた」ことを 1 tick 間記録する
+local _just_closed = false
+
 local function close()
   if _popup then
     _popup:unmount()
     _popup = nil
+    _just_closed = true
+    vim.schedule(function()
+      _just_closed = false
+    end)
   end
+end
+
+function M.is_open()
+  return _popup ~= nil
+end
+
+function M.was_just_closed()
+  return _just_closed
+end
+
+function M.close()
+  close()
 end
 
 -- カードの詳細テキスト行を生成する
@@ -76,7 +96,7 @@ local function build_lines(card)
 
   -- キーマップヒント
   table.insert(lines, "")
-  table.insert(lines, "  [e] edit  [d] delete  [q] close")
+  table.insert(lines, "  [e] edit  [d] delete  [C] open/close  [q] close")
 
   return lines
 end
@@ -89,6 +109,18 @@ function M.open(card, state)
     close()
   end
 
+  -- FloatBorder fg を維持しつつ bg を Normal に合わせる
+  do
+    local fb = vim.api.nvim_get_hl(0, { name = "FloatBorder", link = false })
+    local nb = vim.api.nvim_get_hl(0, { name = "Normal", link = false })
+    vim.api.nvim_set_hl(0, "GhBoardBorder", {
+      fg = fb.fg,
+      bg = nb.bg,
+      ctermfg = fb.ctermfg,
+      ctermbg = nb.ctermbg,
+    })
+  end
+
   local km = config.options.keymaps
   local lines = build_lines(card)
 
@@ -98,13 +130,8 @@ function M.open(card, state)
   _popup = Popup({
     enter = true,
     focusable = true,
-    border = {
-      style = "rounded",
-      text = {
-        top = " Card Detail ",
-        top_align = "left",
-      },
-    },
+    zindex = 200,
+    border = { style = "rounded" },
     position = "50%",
     size = {
       width = popup_width,
@@ -118,10 +145,15 @@ function M.open(card, state)
       wrap = true,
       cursorline = false,
       number = false,
+      winhighlight = "Normal:Normal,NormalFloat:Normal,FloatBorder:GhBoardBorder,EndOfBuffer:Normal",
     },
   })
 
   _popup:mount()
+  pcall(vim.api.nvim_win_set_config, _popup.winid, {
+    title = " Card Detail ",
+    title_pos = "left",
+  })
 
   -- 内容を描画
   vim.api.nvim_buf_set_option(_popup.bufnr, "modifiable", true)
@@ -156,6 +188,73 @@ function M.open(card, state)
         store.apply_delete(card.id)
         close()
       end)
+    end)
+  end)
+
+  map(km.promote_card, function()
+    if card.content.kind ~= "draft" then
+      vim.notify("gh-board: Draft Issue のみ変換できます", vim.log.levels.WARN)
+      return
+    end
+    local owner = config.options.default_owner
+    if not owner then
+      vim.notify("gh-board: default_owner が設定されていません", vim.log.levels.ERROR)
+      return
+    end
+    close()
+    projects.list_repos(owner, function(err, repos)
+      if err then
+        vim.notify("gh-board: " .. err.message, vim.log.levels.ERROR)
+        return
+      end
+      if not repos or #repos == 0 then
+        vim.notify("gh-board: リポジトリが見つかりません", vim.log.levels.WARN)
+        return
+      end
+      local names = vim.tbl_map(function(r)
+        return r.full_name
+      end, repos)
+      vim.ui.select(names, { prompt = "Issue を作成するリポジトリを選択:" }, function(_, idx)
+        if not idx then
+          return
+        end
+        projects.convert_draft_to_issue(card.id, repos[idx].id, function(conv_err)
+          if conv_err then
+            vim.notify("gh-board: " .. conv_err.message, vim.log.levels.ERROR)
+            return
+          end
+          store.apply_delete(card.id)
+          store.load(state.project.id, function(load_err)
+            if load_err then
+              vim.notify("gh-board: " .. load_err.message, vim.log.levels.ERROR)
+            end
+          end)
+        end)
+      end)
+    end)
+  end)
+
+  map(km.close_issue, function()
+    if card.content.kind ~= "issue" then
+      vim.notify("gh-board: Issue のみステータス変更できます", vim.log.levels.WARN)
+      return
+    end
+    local is_open = card.content.state == "OPEN"
+    local new_state = is_open and "CLOSED" or "OPEN"
+    local fn = is_open and projects.close_issue or projects.reopen_issue
+    fn(card.content.id, function(err)
+      if err then
+        vim.notify("gh-board: " .. err.message, vim.log.levels.ERROR)
+        return
+      end
+      local updated = vim.tbl_deep_extend("force", {}, card)
+      updated.content = vim.tbl_extend("force", {}, card.content, { state = new_state })
+      store.apply_update(updated)
+      vim.notify(
+        string.format("gh-board: Issue #%d を %s にしました", card.content.number, new_state),
+        vim.log.levels.INFO
+      )
+      close()
     end)
   end)
 

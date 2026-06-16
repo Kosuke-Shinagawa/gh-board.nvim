@@ -32,9 +32,12 @@ function M.render(column, column_cards, col_width)
   local name = column.name or ""
   local padding = col_width - vim.fn.strdisplaywidth(name) - vim.fn.strdisplaywidth(count_str) - 3
   local header = string.format(" %s%s%s ", name, string.rep(" ", math.max(padding, 1)), count_str)
-  -- 長すぎる場合はトリム
+  -- 長すぎる場合はトリム（バイト切断を避けて表示幅基準でカット）
   if vim.fn.strdisplaywidth(header) > col_width then
-    header = string.format(" %s ", name):sub(1, col_width - 1)
+    header = vim.fn.strcharpart(header, 0, col_width)
+    while vim.fn.strdisplaywidth(header) > col_width do
+      header = vim.fn.strcharpart(header, 0, vim.fn.strchars(header) - 1)
+    end
   end
   table.insert(lines, header)
   table.insert(highlights, {

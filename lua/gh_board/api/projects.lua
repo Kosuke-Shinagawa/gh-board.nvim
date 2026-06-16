@@ -284,4 +284,60 @@ function M.delete_card(project_id, item_id, callback)
   end)
 end
 
+-- Issue を CLOSED 状態にする（Draft Issue と PR には使えない）
+---@param issue_id string  Issue の node ID（content.id）
+---@param callback fun(err: ApiError|nil)
+function M.close_issue(issue_id, callback)
+  client.request(queries.CLOSE_ISSUE, { issueId = issue_id }, function(err, _)
+    callback(err)
+  end)
+end
+
+-- Issue を OPEN 状態に戻す
+---@param issue_id string
+---@param callback fun(err: ApiError|nil)
+function M.reopen_issue(issue_id, callback)
+  client.request(queries.REOPEN_ISSUE, { issueId = issue_id }, function(err, _)
+    callback(err)
+  end)
+end
+
+-- オーナーのリポジトリ一覧を取得する（Draft → Issue 変換先の選択に使用）
+---@param owner string
+---@param callback fun(err: ApiError|nil, repos: {id: string, name: string, full_name: string}[]|nil)
+function M.list_repos(owner, callback)
+  client.request(queries.LIST_REPOS, {
+    login = owner,
+    first = 50,
+  }, function(err, data)
+    if err then
+      callback(err, nil)
+      return
+    end
+    local nodes = data
+      and data.user
+      and data.user.repositories
+      and data.user.repositories.nodes
+      or {}
+    local repos = {}
+    for _, n in ipairs(nodes) do
+      table.insert(repos, { id = n.id, name = n.name, full_name = n.nameWithOwner })
+    end
+    callback(nil, repos)
+  end)
+end
+
+-- Draft Issue を実 Issue に変換する
+---@param item_id string  ProjectItem node ID
+---@param repository_id string  変換先リポジトリの node ID
+---@param callback fun(err: ApiError|nil)
+function M.convert_draft_to_issue(item_id, repository_id, callback)
+  client.request(queries.CONVERT_DRAFT_TO_ISSUE, {
+    itemId = item_id,
+    repositoryId = repository_id,
+  }, function(err, _)
+    callback(err)
+  end)
+end
+
 return M

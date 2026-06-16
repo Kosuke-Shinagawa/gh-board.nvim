@@ -35,34 +35,15 @@ function M.render_line(card, width)
 
   -- "◇ タイトル" or "○ #42 タイトル" の形式
   local prefix = string.format("%s %s%s", icon, number_mark, state_mark)
-  local max_title = math.max(width - #prefix - 2, 8)
+  local max_title = math.max(width - vim.fn.strdisplaywidth(prefix) - 2, 8)
   local title = c.title
   if vim.fn.strdisplaywidth(title) > max_title then
-    -- マルチバイト対応のトリム
-    -- and/or チェーンは多値関数の第 1 戻り値しか伝播しないため、
-    -- chars テーブルを先に構築してから ipairs で回す
-    local trimmed = ""
-    local w = 0
-    local chars = {}
-    if utf8 and utf8.codes then
-      for _, ch in utf8.codes(title) do
-        table.insert(chars, utf8.char(ch))
-      end
-    end
-    for _, byte_str in ipairs(chars) do
-      local cw = vim.fn.strdisplaywidth(byte_str)
-      if w + cw > max_title - 1 then
-        break
-      end
-      trimmed = trimmed .. byte_str
-      w = w + cw
-    end
-    -- フォールバック: utf8 が使えない場合は単純にバイトで切る
-    if trimmed == "" then
-      title = string.sub(title, 1, max_title - 1) .. "…"
-    else
-      title = trimmed .. "…"
-    end
+    -- 表示幅基準でトリム（バイト切断を避ける）
+    local nchars = vim.fn.strchars(title)
+    repeat
+      nchars = nchars - 1
+    until nchars <= 0 or vim.fn.strdisplaywidth(vim.fn.strcharpart(title, 0, nchars) .. "…") <= max_title
+    title = vim.fn.strcharpart(title, 0, nchars) .. "…"
   end
 
   local line = prefix .. title
