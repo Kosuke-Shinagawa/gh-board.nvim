@@ -133,7 +133,8 @@ local function render_preview()
   table.insert(lines, "  " .. c.title)
   table.insert(lines, "")
 
-  local kind_label = ({ draft = "Draft Issue", issue = "Issue", pr = "Pull Request" })[c.kind] or c.kind
+  local kind_label = ({ draft = "Draft Issue", issue = "Issue", pr = "Pull Request" })[c.kind]
+    or c.kind
   table.insert(lines, string.format("  Type    : %s", kind_label))
   if c.number then
     table.insert(lines, string.format("  Number  : #%d", c.number))
@@ -156,7 +157,10 @@ local function render_preview()
 
   if c.body and c.body ~= "" then
     table.insert(lines, "")
-    table.insert(lines, "  ── Body ─────────────────────────────────────")
+    table.insert(
+      lines,
+      "  ── Body ─────────────────────────────────────"
+    )
     for _, body_line in ipairs(vim.split(c.body, "\n", { plain = true })) do
       table.insert(lines, "  " .. body_line)
     end
@@ -250,7 +254,15 @@ local function render()
   if cursor_line then
     local cbs_full, cbe_full = col_byte_range_with_sep(cursor_line, _cursor.col)
     if cbs_full then
-      pcall(vim.api.nvim_buf_add_highlight, bufnr, ns, "GhBoardCursor", cursor_buf_row, cbs_full, cbe_full)
+      pcall(
+        vim.api.nvim_buf_add_highlight,
+        bufnr,
+        ns,
+        "GhBoardCursor",
+        cursor_buf_row,
+        cbs_full,
+        cbe_full
+      )
     end
     local cbs, _ = col_byte_range(cursor_line, _cursor.col)
     if cbs then
@@ -423,23 +435,27 @@ local function setup_keymaps()
         return r.full_name
       end, repos)
 
-      vim.ui.select(names, { prompt = "Issue を作成するリポジトリを選択:" }, function(_, idx)
-        if not idx then
-          return
-        end
-        local repo = repos[idx]
-        projects.convert_draft_to_issue(card.id, repo.id, function(conv_err)
-          if conv_err then
-            vim.notify("gh-board: " .. conv_err.message, vim.log.levels.ERROR)
+      vim.ui.select(
+        names,
+        { prompt = "Issue を作成するリポジトリを選択:" },
+        function(_, idx)
+          if not idx then
             return
           end
-          store.load(state.project.id, function(load_err)
-            if load_err then
-              vim.notify("gh-board: " .. load_err.message, vim.log.levels.ERROR)
+          local repo = repos[idx]
+          projects.convert_draft_to_issue(card.id, repo.id, function(conv_err)
+            if conv_err then
+              vim.notify("gh-board: " .. conv_err.message, vim.log.levels.ERROR)
+              return
             end
+            store.load(state.project.id, function(load_err)
+              if load_err then
+                vim.notify("gh-board: " .. load_err.message, vim.log.levels.ERROR)
+              end
+            end)
           end)
-        end)
-      end)
+        end
+      )
     end)
   end)
 
@@ -542,8 +558,8 @@ function M.open(project_id)
   local win_height = config.options.win_height
 
   -- 検索(3行) + ボード + プレビュー + ヘルプ(3行) を win_height に収める
-  local search_outer = 3  -- 1 content + 2 border
-  local help_outer   = 3  -- 1 content + 2 border
+  local search_outer = 3 -- 1 content + 2 border
+  local help_outer = 3 -- 1 content + 2 border
   local avail = win_height - search_outer - help_outer
   local board_height = math.max(8, math.floor(avail * 0.65))
   local preview_height = math.max(5, avail - board_height - 2)
@@ -571,7 +587,13 @@ function M.open(project_id)
     position = { row = start_row + search_outer, col = start_col },
     size = { width = win_width, height = board_height },
     buf_options = { modifiable = false, readonly = true },
-    win_options = { wrap = false, cursorline = false, number = false, relativenumber = false, winhighlight = WHL },
+    win_options = {
+      wrap = false,
+      cursorline = false,
+      number = false,
+      relativenumber = false,
+      winhighlight = WHL,
+    },
   })
 
   -- プレビューポップアップ
@@ -582,7 +604,13 @@ function M.open(project_id)
     position = { row = start_row + search_outer + board_height + 2, col = start_col },
     size = { width = win_width, height = preview_height },
     buf_options = { modifiable = false, readonly = true, filetype = "markdown" },
-    win_options = { wrap = true, cursorline = false, number = false, relativenumber = false, winhighlight = WHL },
+    win_options = {
+      wrap = true,
+      cursorline = false,
+      number = false,
+      relativenumber = false,
+      winhighlight = WHL,
+    },
   })
 
   -- ヘルプポップアップ（キーバインド一覧）
@@ -590,7 +618,10 @@ function M.open(project_id)
     enter = false,
     focusable = false,
     border = { style = "rounded" },
-    position = { row = start_row + search_outer + (board_height + 2) + (preview_height + 2), col = start_col },
+    position = {
+      row = start_row + search_outer + (board_height + 2) + (preview_height + 2),
+      col = start_col,
+    },
     size = { width = win_width, height = 1 },
     buf_options = { modifiable = false, readonly = true },
     win_options = { wrap = false, number = false, winhighlight = WHL },
@@ -623,17 +654,17 @@ function M.open(project_id)
   do
     local km = config.options.keymaps
     local entries = {
-      { "j/k",       "↓↑"      },
-      { "h/l",       "←→"      },
-      { km.open_detail, "detail"  },
-      { km.new_card,    "new"     },
-      { km.edit_card,   "edit"    },
-      { km.move_card,   "move"    },
-      { km.delete_card, "delete"  },
-      { km.promote_card,"promote" },
-      { km.refresh,     "refresh" },
-      { "/",            "search"  },
-      { km.close,       "close"   },
+      { "j/k", "↓↑" },
+      { "h/l", "←→" },
+      { km.open_detail, "detail" },
+      { km.new_card, "new" },
+      { km.edit_card, "edit" },
+      { km.move_card, "move" },
+      { km.delete_card, "delete" },
+      { km.promote_card, "promote" },
+      { km.refresh, "refresh" },
+      { "/", "search" },
+      { km.close, "close" },
     }
     local parts = {}
     for _, e in ipairs(entries) do

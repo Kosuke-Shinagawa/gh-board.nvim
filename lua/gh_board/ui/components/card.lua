@@ -42,7 +42,8 @@ function M.render_line(card, width)
     local nchars = vim.fn.strchars(title)
     repeat
       nchars = nchars - 1
-    until nchars <= 0 or vim.fn.strdisplaywidth(vim.fn.strcharpart(title, 0, nchars) .. "…") <= max_title
+    until nchars <= 0
+      or vim.fn.strdisplaywidth(vim.fn.strcharpart(title, 0, nchars) .. "…") <= max_title
     title = vim.fn.strcharpart(title, 0, nchars) .. "…"
   end
 

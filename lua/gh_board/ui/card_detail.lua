@@ -214,23 +214,27 @@ function M.open(card, state)
       local names = vim.tbl_map(function(r)
         return r.full_name
       end, repos)
-      vim.ui.select(names, { prompt = "Issue を作成するリポジトリを選択:" }, function(_, idx)
-        if not idx then
-          return
-        end
-        projects.convert_draft_to_issue(card.id, repos[idx].id, function(conv_err)
-          if conv_err then
-            vim.notify("gh-board: " .. conv_err.message, vim.log.levels.ERROR)
+      vim.ui.select(
+        names,
+        { prompt = "Issue を作成するリポジトリを選択:" },
+        function(_, idx)
+          if not idx then
             return
           end
-          store.apply_delete(card.id)
-          store.load(state.project.id, function(load_err)
-            if load_err then
-              vim.notify("gh-board: " .. load_err.message, vim.log.levels.ERROR)
+          projects.convert_draft_to_issue(card.id, repos[idx].id, function(conv_err)
+            if conv_err then
+              vim.notify("gh-board: " .. conv_err.message, vim.log.levels.ERROR)
+              return
             end
+            store.apply_delete(card.id)
+            store.load(state.project.id, function(load_err)
+              if load_err then
+                vim.notify("gh-board: " .. load_err.message, vim.log.levels.ERROR)
+              end
+            end)
           end)
-        end)
-      end)
+        end
+      )
     end)
   end)
 

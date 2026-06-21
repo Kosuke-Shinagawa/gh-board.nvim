@@ -314,10 +314,7 @@ function M.list_repos(owner, callback)
       callback(err, nil)
       return
     end
-    local nodes = data
-      and data.user
-      and data.user.repositories
-      and data.user.repositories.nodes
+    local nodes = data and data.user and data.user.repositories and data.user.repositories.nodes
       or {}
     local repos = {}
     for _, n in ipairs(nodes) do
